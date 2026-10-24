@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- Drop this on any page: it lists the next San Antonio tech events, live.
+     The feed allows cross-origin requests, so no server is needed.
+     Set data-community to one or more group ids (comma-separated), or remove it for every group. -->
+<html lang="en"><head><meta charset="utf-8"><title>SA tech events</title>
+<style>
+  .sa-events { font: 15px/1.45 system-ui, sans-serif; max-width: 420px; border: 1px solid #e5e5e5; border-radius: 12px; padding: 16px 18px; }
+  .sa-events h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #525252; margin: 0 0 10px; }
+  .sa-events ol { list-style: none; margin: 0; padding: 0; }
+  .sa-events li { padding: 8px 0; border-top: 1px solid #f0f0f0; }
+  .sa-events a { color: #0a0a0a; font-weight: 600; text-decoration: none; }
+  .sa-events time { display: block; color: #525252; font-size: 13px; }
+  .sa-events footer { margin-top: 10px; font-size: 12px; color: #737373; }
+</style></head><body>
+
+<section class="sa-events" data-community="" data-count="5">
+  <h2>Coming up in SA tech</h2>
+  <ol><li>Loading…</li></ol>
+  <footer>From the <a href="https://www.devsa.community/events">DEVSA community calendar</a></footer>
+</section>
+
+<script>
+for (const box of document.querySelectorAll('.sa-events')) {
+  const ns = 'https://www.devsa.community/ns/event-feed/1.0'
+  const q = box.dataset.community ? `?communityId=${encodeURIComponent(box.dataset.community)}` : ''
+  fetch(`https://www.devsa.community/api/events/feed${q}`)
+    .then(r => r.text())
+    .then(text => {
+      const items = [...new DOMParser().parseFromString(text, 'application/xml').querySelectorAll('item')]
+        .slice(0, +box.dataset.count || 5)
+      const list = box.querySelector('ol')
+      list.replaceChildren(...items.map(item => {
+        const li = document.createElement('li'), a = document.createElement('a'), t = document.createElement('time')
+        a.href = item.querySelector('link').textContent
+        a.textContent = item.querySelector('title').textContent
+        const start = item.getElementsByTagNameNS(ns, 'eventStart')[0]?.textContent
+        t.dateTime = start
+        t.textContent = new Date(start).toLocaleString('en-US', { timeZone: 'America/Chicago', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        li.append(t, a)
+        return li
+      }))
+      if (!items.length) list.innerHTML = '<li>Nothing on the calendar yet.</li>'
+    })
+    .catch(() => { box.querySelector('ol').innerHTML = '<li><a href="https://www.devsa.community/events">See the calendar</a></li>' })
+}
+</script>
+</body></html>
